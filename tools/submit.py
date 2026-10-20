@@ -25,6 +25,7 @@ Phase 2 has a canary the server pins per number, while the programs pin a
 fixed local one -- the other value -- so one answers/attack2.txt passes one
 side at a time (the README's phase 2 tells the two apart).
 """
+
 import http.client
 import os
 import re
@@ -32,16 +33,21 @@ import ssl
 import subprocess
 import sys
 
-USAGE = ("usage: submit.py [--server HOST:PORT] [--scheme https|http] "
-         "[--answers DIR]\n"
-         "                  [--unhex PATH] [--timeout S] ID [PHASE ...]")
+USAGE = (
+    "usage: submit.py [--server HOST:PORT] [--scheme https|http] "
+    "[--answers DIR]\n"
+    "                  [--unhex PATH] [--timeout S] ID [PHASE ...]"
+)
 
 # unhex lives next to this script (tools/unhex), whatever directory the script
 # is called from; `make attack` builds it there.
-DEFAULTS = {"server": "bomb.hydroiodic.site:15214", "scheme": "https",
-            "answers": "answers",
-            "unhex": os.path.join(os.path.dirname(os.path.abspath(__file__)), "unhex"),
-            "timeout": "300"}
+DEFAULTS = {
+    "server": "bomb.hydroiodic.site:15214",
+    "scheme": "https",
+    "answers": "answers",
+    "unhex": os.path.join(os.path.dirname(os.path.abspath(__file__)), "unhex"),
+    "timeout": "300",
+}
 
 
 def fail(message):
@@ -105,13 +111,16 @@ def read_answer(opts, phase):
     except OSError as e:
         refuse("cannot read %s: %s" % (path, e))
     try:
-        proc = subprocess.run([opts["unhex"]], input=text,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.run(
+            [opts["unhex"]], input=text, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
     except OSError as e:
         refuse("cannot run %s: %s -- run make attack first" % (opts["unhex"], e))
     if proc.returncode != 0:
-        refuse("%s would not read %s:\n%s" % (opts["unhex"], path,
-               proc.stderr.decode("utf-8", "replace").rstrip()))
+        refuse(
+            "%s would not read %s:\n%s"
+            % (opts["unhex"], path, proc.stderr.decode("utf-8", "replace").rstrip())
+        )
     return path, proc.stdout or None
 
 
@@ -125,8 +134,9 @@ def post(opts, endpoint, body):
     except ValueError:
         fail("--timeout wants seconds, not %s" % opts["timeout"])
     if opts["scheme"] == "https":
-        conn = http.client.HTTPSConnection(host, int(port), timeout=timeout,
-                                           context=ssl.create_default_context())
+        conn = http.client.HTTPSConnection(
+            host, int(port), timeout=timeout, context=ssl.create_default_context()
+        )
     elif opts["scheme"] == "http":
         conn = http.client.HTTPConnection(host, int(port), timeout=timeout)
     else:
@@ -140,8 +150,10 @@ def post(opts, endpoint, body):
     finally:
         conn.close()
     if reply.status != 200:
-        refuse("%s://%s said %s:\n%s" % (opts["scheme"], opts["server"],
-                                         reply.status, text.rstrip()))
+        refuse(
+            "%s://%s said %s:\n%s"
+            % (opts["scheme"], opts["server"], reply.status, text.rstrip())
+        )
     return text
 
 
@@ -154,8 +166,9 @@ def main(argv):
         if data is None:
             print("%s: no answer to send" % path)
             continue
-        text = post(opts, "/report",
-                    ("id=%s\nphase=%s\n" % (sid, phase)).encode() + data).strip()
+        text = post(
+            opts, "/report", ("id=%s\nphase=%s\n" % (sid, phase)).encode() + data
+        ).strip()
         print(text)
         sent += 1
         if re.match(r"phase %s: pass\b" % phase, text):
